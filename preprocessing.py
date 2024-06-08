@@ -1,25 +1,51 @@
-import keras
-import tensorflow as tf
-import keras_nlp
-import numpy as np
+from transformers import TextDataset, DataCollatorForLanguageModeling, Trainer, TrainingArguments
+from transformers import GPT2Tokenizer, GPT2LMHeadModel
 import pandas as pd
 
 
-def getdata():
-    data = pd.read_csv("data/P1.csv")
-    data = data.dropna()
-    data = data.drop_duplicates()
-    data = data.reset_index(drop=True)
-    data = data["Joke"].values
-    return list(data)
+def load_dataset(file_path, tokenizer, block_size=128):
+    dataset = TextDataset(
+        tokenizer=tokenizer,
+        file_path=file_path,
+        block_size=block_size
+    )
+    return dataset
 
 
+def fine_tune_gpt2(model, tokenizer, train_file_path, output_dir):
+    train_dataset = load_dataset(train_file_path, tokenizer)
+
+    data_collator = DataCollatorForLanguageModeling(
+        tokenizer=tokenizer,
+        mlm=False,
+    )
+
+    training_args = TrainingArguments(
+        output_dir=output_dir,
+        overwrite_output_dir=True,
+        num_train_epochs=3,
+        per_device_train_batch_size=4,
+        save_steps=10_000,
+        save_total_limit=2,
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        data_collator=data_collator,
+        train_dataset=train_dataset,
+    )
+
+    trainer.train()
+    
 def main():
-    features = getdata()
-    llama_lm = keras_nlp.models.Llama3CausalLM.from_preset("llama3_8b_en", dtype="bfloat16")
-    llama_lm.fit(x=features, batch_size=20)
-    llama_lm.save("models/llama3_8b_en")
+    train_file_path = 'data/train.txt'
+    output_dir = './gpt2-fine-tuned'
+    model_name = 'gpt2'
+    model = GPT2LMHeadModel.from_pretrained(model_name)
+    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    fine_tune_gpt2(model, tokenizer, train_file_path, output_dir)
     
     
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
