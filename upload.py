@@ -3,10 +3,10 @@ import pandas as pd
 import uuid
 
 # Initialize the DynamoDB resource
-dynamodb = boto3.resource('dynamodb', region_name='your-region')
+dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 
 # Load the CSV file
-csv_file_path = 'path/to/your/csvfile.csv'
+csv_file_path = 'tweets.csv'
 data = pd.read_csv(csv_file_path)
 
 # Get the table
